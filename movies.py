@@ -1,4 +1,19 @@
 import random
+import json
+import os
+
+def save_movies_to_file():
+    with open("movies.json", "w") as file:
+        json.dump(movies, file, indent=4)
+
+def load_movies_from_file():
+    if os.path.exists("movies.json"):
+        with open("movies.json", "r") as file:
+            return json.load(file)
+    return []
+
+# Load movies at startup
+movies = load_movies_from_file()
 # list of the movies
 movies = [
     {"name": "In the Name of the Father", "year": 1993, "rating": 8.1},
@@ -24,16 +39,34 @@ def list_movies():
 
 # add a movie to the list
 def add_movie():
-    name = str(input("Enter the new movie name:  ")).lower().strip()
-    year = int(input("Enter new movie year: "))
-    while year < 1900 or year > 2025 and year != isinstance(int):
-        year = int(input("Enter a valid year between 1900 and 2025: "))
-    rating = float(input("Enter new movie rating: "))
-    while rating < 0 or rating > 10 and rating != isinstance(float):
-        rating = float(input("Enter a valid rating between 0 and 10: "))
+    name = input("Enter the new movie name: ").lower().strip()
+
+    # Validate year
+    while True:
+        try:
+            year = int(input("Enter new movie year: "))
+            if 1900 <= year <= 2025:
+                break
+            else:
+                print("Year must be between 1900 and 2025.")
+        except ValueError:
+            print("Invalid input! Please enter a valid year.")
+
+    # Validate rating
+    while True:
+        try:
+            rating = float(input("Enter new movie rating: "))
+            if 0 <= rating <= 10:
+                break
+            else:
+                print("Rating must be between 0 and 10.")
+        except ValueError:
+            print("Invalid input! Please enter a valid rating.")
+
     movie = {"name": name, "year": year, "rating": rating}
     movies.append(movie)
     print(f"{name} has been added to the list successfully")
+    save_movies_to_file()
     prompt("\nPress enter to continue")
 
 #delete a movie from the list by name of the movie
@@ -48,6 +81,7 @@ def delete_movie():
             break  # Exit the loop once the movie is found and removed
     if not found:
         print(f"Movie {name} is not in the list")
+    save_movies_to_file()
     prompt("\nPress enter to continue")
 
 # update a movie in the list
@@ -64,17 +98,25 @@ def update_movie():
 
     if not found:
         print(f"Movie {name} is not in the list")
+    save_movies_to_file()
 
     prompt("\nPress enter to continue")  # Assuming prompt() is defined elsewhere
 #stats of the movies
 def stats():
     total_movies = len(movies)
-    total_rating = sum([movie["rating"] for movie in movies])
-    avg_rating = total_rating / total_movies
-    print(f"Average rating of the movies: {avg_rating}")
-    print("Median rating of the movies: ", sorted([movie["rating"] for movie in movies])[len(movies) // 2])
-    print("Best movie: ", max(movies, key=lambda movie: movie["rating"])["name"])
-    print("Worst movie: ", min(movies, key=lambda movie: movie["rating"])["name"])
+    total_rating = sum(movie["rating"] for movie in movies)
+    avg_rating = total_rating / total_movies if total_movies > 0 else 0
+
+    sorted_ratings = sorted([movie["rating"] for movie in movies])
+    median_rating = sorted_ratings[len(sorted_ratings) // 2] if sorted_ratings else 0
+
+    best_movie = max(movies, key=lambda movie: movie["rating"])["name"] if movies else "N/A"
+    worst_movie = min(movies, key=lambda movie: movie["rating"])["name"] if movies else "N/A"
+
+    print(f"Average rating of the movies: {avg_rating:.2f}")
+    print(f"Median rating of the movies: {median_rating}")
+    print(f"Best movie: {best_movie}")
+    print(f"Worst movie: {worst_movie}")
     prompt("\nPress enter to continue")
 
 #random movie
@@ -119,21 +161,36 @@ def movies_sorted_by_year():
 #The Avengers (2012): 8.0
 
 def filter_movies():
-    min_rating = float(input("Enter minimum rating (leave blank for no minimum rating): ") or 0)
-    start_year = int(input("Enter start year (leave blank for no start year): ") or 0)
-    end_year = int(input("Enter end year (leave blank for no end year): ") or 9999)
-    sorted_movies = sorted(movies, key=lambda movie: movie["year"])
-    for movie in sorted_movies:
-        if movie["rating"] >= min_rating and start_year <= movie["year"] <= end_year:
-            print(f"{movie['name']} ({movie['year']}): {movie['rating']}")
-    prompt("\nPress enter to continue")
+    try:
+        min_rating = float(input("Enter minimum rating (leave blank for no minimum rating): ") or 0)
+    except ValueError:
+        min_rating = 0
 
+    try:
+        start_year = int(input("Enter start year (leave blank for no start year): ") or 0)
+    except ValueError:
+        start_year = 0
+
+    try:
+        end_year = int(input("Enter end year (leave blank for no end year): ") or 9999)
+    except ValueError:
+        end_year = 9999
+
+    filtered_movies = [movie for movie in movies if
+                       movie["rating"] >= min_rating and start_year <= movie["year"] <= end_year]
+
+    if filtered_movies:
+        for movie in filtered_movies:
+            print(f"{movie['name']} ({movie['year']}): {movie['rating']}")
+    else:
+        print("No movies match the specified criteria.")
+
+    prompt("\nPress enter to continue")
 
 def menu():
     print(
         """
-        ***************** Welcome to the Movie App *****************
-         
+        ***************** Welcome to the Movie App ***************** 
         Menu:
         0. Exit
         1. List movies
@@ -151,8 +208,8 @@ def menu():
 
 #promptet to display the menu
 def prompt(message):
-    enter = input(message)
-    return menu()
+    input(message)
+    return
  #validator
 def get_valid_rating(msg):
     while True:
@@ -165,34 +222,36 @@ def get_valid_rating(msg):
         except ValueError:
             print("Invalid input! Please enter a number.")
 
-    # Now, you can just call the function wherever needed:
 
 
 
 def main():
-    menu()
     while True:
-        choice = int(input("Enter your choice:(0-10): "))
-        actions = {
-            0: exit,
-            1: list_movies,
-            2: add_movie,
-            3: delete_movie,
-            4: update_movie,
-            5: stats,
-            6: random_movie,
-            7: search_movie,
-            8: movies_sorted_by_rating,
-            9: movies_sorted_by_year,
-            10: filter_movies
-        }
-        if choice == 0:
-            print("Goodbye!")
-            break
-        elif choice in actions:
-            actions[choice]()
-        else:
-            print("Invalid choice. Please enter a number between 0 and 10.")
+        menu()
+        try:
+            choice = int(input("Enter your choice (0-10): "))
+            actions = {
+                0: exit,
+                1: list_movies,
+                2: add_movie,
+                3: delete_movie,
+                4: update_movie,
+                5: stats,
+                6: random_movie,
+                7: search_movie,
+                8: movies_sorted_by_rating,
+                9: movies_sorted_by_year,
+                10: filter_movies
+            }
+            if choice == 0:
+                print("Goodbye!")
+                break
+            elif choice in actions:
+                actions[choice]()
+            else:
+                print("Invalid choice. Please enter a number between 0 and 10.")
+        except ValueError:
+            print("Invalid input! Please enter a number.")
 
 if __name__ == "__main__":
     main()
