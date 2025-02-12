@@ -38,27 +38,34 @@ def add_movie():
 
 #delete a movie from the list by name of the movie
 def delete_movie():
-    name = str(input("Enter movie name to delete: ")).lower().strip()
+    name = input("Enter movie name to delete: ").lower().strip()
+    found = False
     for movie in movies:
-        if movie["name"] == name:
+        if movie["name"].lower() == name:
             movies.remove(movie)
             print(f"{name} has been removed from the list")
-        else :
-            print(f"Movie {name} is not in the list")
+            found = True
+            break  # Exit the loop once the movie is found and removed
+    if not found:
+        print(f"Movie {name} is not in the list")
     prompt("\nPress enter to continue")
 
 # update a movie in the list
 def update_movie():
-    name = str(input("Enter movie name: ")).lower().strip()
+    name = input("Enter movie name: ").lower().strip()
+    found = False
     for movie in movies:
-        if movie["name"] == name:
-            rating = get_valid_rating()
+        if movie["name"].lower().strip() == name:
+            rating = get_valid_rating("Enter a rating between 0 and 10: ")
             movie["rating"] = rating
             print(f"{name} has been updated")
-        else:
-            print(f"Movie {name} is not in the list")
-    prompt("\nPress enter to continue")
+            found = True
+            break  # Exit the loop once the movie is found and updated
 
+    if not found:
+        print(f"Movie {name} is not in the list")
+
+    prompt("\nPress enter to continue")  # Assuming prompt() is defined elsewhere
 #stats of the movies
 def stats():
     total_movies = len(movies)
@@ -73,17 +80,19 @@ def stats():
 #random movie
 def random_movie():
     movie = random.choice(movies)
-    print(f"Name: {movie['name']}, Year: {movie['year']}, Rating: {movie['rating']}")
+    print(f"Your movie tonight :  {movie['name']}, Rated: {movie['rating']}")
     prompt("\nPress enter to continue")
 
 #Search for a part of the movie name
 def search_movie():
-    search = str(input("Enter the name of the movie you want to search: ")).lower().strip()
+    search = str(input("Enter part of movie name: ")).lower().strip()
+    found = False
     for movie in movies:
-        if search in movie["name"]:
+        if search in movie["name"].lower().strip():
             print(f"Name: {movie['name']}, Rating: {movie['rating']}")
-        else:
-            print(f"{search} is not in the list")
+            found = True
+    if not found:
+        print(f"{search} is not in the list")
     prompt("\nPress enter to continue")
 
 #movies sorted by rating
@@ -145,10 +154,10 @@ def prompt(message):
     enter = input(message)
     return menu()
  #validator
-def get_valid_rating():
+def get_valid_rating(msg):
     while True:
         try:
-            rating = float(input("Enter a rating between 0 and 10: "))
+            rating = float(input(msg))
             if 0 <= rating <= 10:
                 return rating  # Valid rating, return it
             else:
